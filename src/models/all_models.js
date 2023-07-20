@@ -13,8 +13,7 @@ export const Category = db.sequelize.define("categories", {
     },
     parent: {
         type : db.Sequelize.INTEGER,
-        allowNull : false,
-        defaultValue : 0
+        allowNull : false
     }
 },
 { timestamps: false }
