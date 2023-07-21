@@ -7,6 +7,6 @@ const storage = createCloudinaryStorage("profiles")
 const uploader = createUploader(storage)
 const router = Router()
 
-router.get("/", ProductControllers.allProduct)
+router.get("/", verifyUser, ProductControllers.allProduct)
 
 export default router

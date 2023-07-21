@@ -6,6 +6,14 @@ import { Op } from "sequelize";
 
 export const allProduct = async( req, res, next) => {
     try {
+        const { roleId } = req.user;
+        
+        if(roleId !== 1 ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
+        
         const { 
             page, 
             product_name, 
