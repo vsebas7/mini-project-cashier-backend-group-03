@@ -9,7 +9,7 @@ import transporter from "../../../helpers/transporter.js"
 import * as encryption from "../../../helpers/encryption.js"
 import * as tokenHelper from "../../../helpers/token.js"
 import * as errorMiddleware from "../../../middleware/error.handler.js"
-import db from "../../models/index.js"
+import db from "../../../models/index.js"
 import moment from "moment";
 
 export const login = async (req, res, next) => {

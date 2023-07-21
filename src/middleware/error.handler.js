@@ -7,6 +7,8 @@ export const EMAIL_ALREADY_EXISTS = "Email address is taken";
 export const INCORRECT_PASSWORD = "Password is incorrect";
 export const INVALID_CREDENTIALS = "Invalid credentials";
 export const BAD_REQUEST = "Bad request";
+export const DATA_NOT_FOUND = "Data not found";
+
 
 export const DEFAULT_ERROR_STATUS = 500;
 export const BAD_REQUEST_STATUS = 400;
