@@ -11,12 +11,12 @@ const app = express();
 app.use(bodyParser.json())
 app.use(cors({ exposedHeaders : "Authorization" }))
 
-import AuthRouters from "./src/controllers/authentication/routers.js"
+import AuthAdminRouters from "./src/controllers/authentication/admin/routers.js"
 import ProductRouters from "./src/controllers/product/routers.js"
 import ReportRouters from "./src/controllers/report/routers.js"
 import TransactionRouters from "./src/controllers/transaction/routers.js"
 
-app.use("/api/auth", AuthRouters)
+app.use("/api/auth/admin", AuthAdminRouters)
 app.use("/api/product", ProductRouters)
 app.use("/api/report", ReportRouters)
 app.use("/api/transaction", TransactionRouters)
