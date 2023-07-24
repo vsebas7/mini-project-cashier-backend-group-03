@@ -8,6 +8,8 @@ export const INCORRECT_PASSWORD = "Password is incorrect";
 export const INVALID_CREDENTIALS = "Invalid credentials";
 export const BAD_REQUEST = "Bad request";
 export const DATA_NOT_FOUND = "Data not found";
+export const PRODUCT_ALREADY_EXIST = "Product name is already exist"
+export const PRODUCT_NOT_FOUND = "Product id not found"
 
 
 export const DEFAULT_ERROR_STATUS = 500;
