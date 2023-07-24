@@ -20,7 +20,7 @@ export const login = async (req, res, next) => {
 
         const userExists = await User?.findOne(
             {
-                where: query
+                where: username
             }
         );
 
@@ -347,7 +347,7 @@ export const changeStatus = async (req, res, next) => {
             message : errorMiddleware.UNAUTHORIZED_STATUS 
         });
 
-        const { idCashier, updateStatus } = req.params;
+        const { idCashier, updateStatus } = req.body;
 
         const userExists = await User?.findOne({ 
             where : { 
