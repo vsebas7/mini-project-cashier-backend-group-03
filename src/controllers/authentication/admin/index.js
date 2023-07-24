@@ -1,5 +1,6 @@
 import { ValidationError } from "yup"
 import { User } from "../../../models/all_models.js"
+import { Op } from "sequelize";
 import handlebars from "handlebars"
 import fs from "fs"
 import path from "path"
@@ -20,7 +21,7 @@ export const login = async (req, res, next) => {
 
         const userExists = await User?.findOne(
             {
-                where: query
+                where: {username}
             }
         );
 
@@ -275,7 +276,7 @@ export const registerCashier = async (req, res, next) => {
             email,
             password : hashedPassword,
             roleId : 2,
-            status : active
+            status : "active"
         });
 
         const accessToken = tokenHelper.createToken({ 
@@ -347,7 +348,7 @@ export const changeStatus = async (req, res, next) => {
             message : errorMiddleware.UNAUTHORIZED_STATUS 
         });
 
-        const { idCashier, updateStatus } = req.params;
+        const { idCashier, updateStatus } = req.body;
 
         const userExists = await User?.findOne({ 
             where : { 
