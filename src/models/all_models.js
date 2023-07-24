@@ -14,6 +14,11 @@ export const Category = db.sequelize.define("categories", {
     parent: {
         type : db.Sequelize.INTEGER,
         allowNull : false
+    },
+    status: {
+        type : db.Sequelize.STRING(45),
+        allowNull : false,
+        defaultValue: 'available'
     }
 },
 { timestamps: false }

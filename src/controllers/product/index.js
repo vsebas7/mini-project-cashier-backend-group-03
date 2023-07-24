@@ -1,4 +1,4 @@
-import { Product } from "../../models/all_models.js"
+import { Category, Product } from "../../models/all_models.js"
 import { ValidationError } from "yup"
 import { Op } from "sequelize";
 import * as errorMiddleware from "../../middleware/error.handler.js"
@@ -10,13 +10,13 @@ import moment from "moment";
 
 export const allProduct = async( req, res, next) => {
     try {
-        // const { roleId } = req.user;
+        const { roleId } = req.user;
         
-        // if(roleId !== 1 ) throw ({ 
-        //     type : "error",
-        //     status : errorMiddleware.UNAUTHORIZED, 
-        //     message : errorMiddleware.UNAUTHORIZED_STATUS 
-        // });
+        if(roleId !== 1 ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
         
         const { 
             page, 
@@ -74,13 +74,13 @@ export const allProduct = async( req, res, next) => {
 export const addProduct = async (req, res, next) =>{
     const transaction = await db.sequelize.transaction()
     try {
-        // const { roleId } = req.user;
+        const { roleId } = req.user;
         
-        // if(roleId !== 1 ) throw ({ 
-        //     type : "error",
-        //     status : errorMiddleware.UNAUTHORIZED, 
-        //     message : errorMiddleware.UNAUTHORIZED_STATUS 
-        // });
+        if(roleId !== 1 ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
         
         const { data } = req.body;
 
@@ -111,7 +111,7 @@ export const addProduct = async (req, res, next) =>{
             stock,
             categoryId : category,
             description : desc,
-            // image : req?.file?.filename
+            image : req?.file?.filename
         })
 
         res.status(200).json(
@@ -126,9 +126,9 @@ export const addProduct = async (req, res, next) =>{
     } catch (error) {
         transaction.rollback()
 
-        // cloudinary.v2.api
-        //     .delete_resources([`${req?.file?.filename}`],
-        //         { type: 'upload', resource_type: 'image' })
+        cloudinary.v2.api
+            .delete_resources([`${req?.file?.filename}`],
+                { type: 'upload', resource_type: 'image' })
 
         if (error instanceof ValidationError) {
             return next({
@@ -381,7 +381,7 @@ export const changeCategory = async (req, res, next) => {
             message : errorMiddleware.UNAUTHORIZED_STATUS 
         });
         
-        const { product_id, category } = req.query;
+        const { product_id, category_id } = req.query;
 
         const productExists = await Product?.findOne({ 
             where : { 
@@ -399,7 +399,7 @@ export const changeCategory = async (req, res, next) => {
 
         await Product?.update(
             {
-                categoryId : category
+                categoryId : category_id
             },
             {
                 where : 
@@ -439,13 +439,13 @@ export const changeCategory = async (req, res, next) => {
 export const changeImage = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     try {
-        // const { roleId } = req.user;
+        const { roleId } = req.user;
         
-        // if(roleId !== 1 ) throw ({ 
-        //     type : "error",
-        //     status : errorMiddleware.UNAUTHORIZED, 
-        //     message : errorMiddleware.UNAUTHORIZED_STATUS 
-        // });
+        if(roleId !== 1 ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
 
         const { product_id } = req.params
 
@@ -510,7 +510,7 @@ export const changeStatus = async (req, res, next) => {
             message : errorMiddleware.UNAUTHORIZED_STATUS 
         });
 
-        const { product_id, status } = req.query
+        const { product_id, status } = req.body
 
         const productExists = await Product?.findOne({ 
             where : { 
@@ -554,4 +554,353 @@ export const changeStatus = async (req, res, next) => {
     }
 }
 
+export const allCategory = async (req, res, next) => {
+    try {
+        const { roleId } = req.user;
+        
+        if(roleId > 2   ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
 
+        const category = await Category?.findAll({
+            where: {
+                [Op.not]:[
+                    {
+                        status : "deleted"
+                    }
+                ]
+            }
+        })
+
+        res.status(200).json({
+            type : "success",
+            message : "Data berhasil dimuat",
+            category : category
+        })
+
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const addCategory = async (req, res, next) => {
+    try {
+        const { roleId } = req.user;
+        
+        if(roleId > 2   ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
+
+        const { name , sub_category } = req.body
+
+        await validation.AddCategoryValidationSchema.validate(req.body);
+
+        const categoryIsExists = await Category?.findAll({
+            where : {
+                name
+            }
+        })
+
+        if(categoryIsExists) throw({
+            type : "error",
+            status : errorMiddleware.BAD_REQUEST_STATUS,
+            message : errorMiddleware.CATEGORY_ALREADY_EXIST
+        })
+
+        const categoryIsDeleted = await Category?.findOne({
+            where : {
+                status : "deleted",
+                id : sub_category
+            }
+        })
+
+        if(categoryIsDeleted) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        const category = await Category.create({
+            name,
+            parent : sub_category
+        })
+
+        res.status(200).json({
+            type : "success",
+            message : "Data berhasil dimuat",
+            category : category
+        })
+
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const changeCategoryName = async (req, res, next) => {
+    try {
+        const {roleId} = req.user
+
+        if(roleId > 2) throw ({
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED_STATUS,
+            message : errorMiddleware.UNAUTHORIZED
+        })
+
+        const { category_id, name } = req.body
+
+        await validation.ChangeCategoryNameValidationSchema.validate(req.body);
+
+        const categoryIsExist = await Category?.findOne({
+            where : {
+                name
+            }
+        })
+
+        if(categoryIsExist) throw ({
+            type : "error",
+            status : errorMiddleware.BAD_REQUEST_STATUS,
+            message : errorMiddleware.CATEGORY_ALREADY_EXIST
+        })
+
+        const categoryIsDeleted = await Category?.findOne({
+            where : {
+                status : "deleted",
+                id : category_id
+            }
+        })
+
+        if(categoryIsDeleted) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        await Category.update(
+            { 
+                name
+            }, 
+            { 
+                where : { 
+                    id : category_id
+                } 
+            }
+        )
+
+        res.status(200).json({
+            type : "success",
+            message : "Change category name success",
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const changeCategoryParent = async (req, res, next) => {
+    try {
+        const {roleId} = req.user
+
+        if(roleId > 2) throw ({
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED_STATUS,
+            message : errorMiddleware.UNAUTHORIZED
+        })
+
+        const { category_id, parent } = req.body
+
+        await validation.CategoryIDValidationSchema.validate(req.body);
+
+
+        const categoryIsExist = await Category?.findOne({
+            where : {
+                id : category_id
+            }
+        })
+
+        if(!categoryIsExist) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        const categoryIsDeleted = await Category?.findOne({
+            where : {
+                status : "deleted",
+                id : category_id
+            }
+        })
+
+        if(categoryIsDeleted) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        if(category_id === parent) throw ({
+            type : "error",
+            status : errorMiddleware.BAD_REQUEST_STATUS,
+            message : errorMiddleware.BAD_REQUEST
+        })
+
+        await Category.update(
+            { 
+                parent
+            }, 
+            { 
+                where : { 
+                    id : category_id
+                } 
+            }
+        )
+
+        res.status(200).json({
+            type : "success",
+            message : "Change category parent success",
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const parentCategory = async (req, res, next) => {
+    try {
+        const { roleId } = req.user;
+        
+        if(roleId > 2   ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
+
+        const parent = await Category?.findAll({
+            where : {
+               [Op.not]:[
+                {
+                    parent : null
+                }
+               ]
+            }
+        })
+
+        res.status(200).json({
+            type : "success",
+            message : "Data berhasil dimuat",
+            category : parent
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const deleteCategory = async (req, res, next) => {
+    try {
+        const { roleId } = req.user;
+        
+        if(roleId > 2   ) throw ({ 
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED, 
+            message : errorMiddleware.UNAUTHORIZED_STATUS 
+        });
+
+        const { category_id } = req.body
+
+        await validation.CategoryIDValidationSchema.validate(req.body);
+
+        const category = await Category?.findAll({
+            where : {
+               id : category_id
+            }
+        })
+
+        if(!category) throw ({
+            type : "error",
+            status : errorMiddleware.BAD_REQUEST_STATUS,
+            message : errorMiddleware.BAD_REQUEST
+        })
+
+        const categoryIsDeleted = await Category?.findOne({
+            where : {
+                status : "deleted",
+                id : category_id
+            }
+        })
+
+        if(categoryIsDeleted) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        await Category?.update(
+            {
+                status : "deleted"
+            },
+            {
+                where : {
+                    id : category_id
+                }
+            }
+        )
+
+        res.status(200).json({
+            type : "success",
+            message : "Category deleted",
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const changeCategoryStatus = async (req, res, next) => {
+    try {
+        // const {roleId} = req.user
+
+        // if(roleId > 2) throw ({
+        //     type : "error",
+        //     status : errorMiddleware.UNAUTHORIZED_STATUS,
+        //     message : errorMiddleware.UNAUTHORIZED
+        // })
+
+        const { category_id, status } = req.body
+
+        await validation.ChangeCategoryStatusValidationSchema.validate(req.body);
+
+        const categoryIsExist = await Category?.findOne({
+            where : {
+                id : category_id
+            }
+        })
+
+        if(!categoryIsExist) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.CATEGORY_NOT_FOUND
+        })
+
+        await Category.update(
+            { 
+                status
+            }, 
+            { 
+                where : { 
+                    id : category_id
+                } 
+            }
+        )
+
+        res.status(200).json({
+            type : "success",
+            message : "Change category status success",
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
