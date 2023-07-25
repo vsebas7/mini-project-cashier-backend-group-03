@@ -1,5 +1,5 @@
 import { Router } from "express"
-import verifyUser from "../../../middleware/token.verify.js"
+import {verifyUser} from "../../../middleware/token.verify.js"
 import * as AdminControllers from "./index.js"
 import { createCloudinaryStorage, createUploader } from "../../../helpers/uploader.js"
 

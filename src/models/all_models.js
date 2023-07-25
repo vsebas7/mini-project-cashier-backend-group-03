@@ -13,12 +13,12 @@ export const Category = db.sequelize.define("categories", {
     },
     parent: {
         type : db.Sequelize.INTEGER,
-        allowNull : false
+        allowNull : true
     },
     status: {
-        type : db.Sequelize.STRING(45),
+        type : db.Sequelize.INTEGER,
         allowNull : false,
-        defaultValue: 'available'
+        defaultValue: 1
     }
 },
 { timestamps: false }
@@ -39,15 +39,6 @@ export const Product = db.sequelize.define("products", {
         type: db.Sequelize.INTEGER,
         allowNull : false
     },
-    stock: {
-        type: db.Sequelize.INTEGER,
-        allowNull : false,
-        defaultValue: 1
-    },
-    categoryId : {
-        type : db.Sequelize.INTEGER,
-        allowNull : false,
-    },
     description: {
         type : db.Sequelize.TEXT('medium'),
         allowNull : false
@@ -57,11 +48,30 @@ export const Product = db.sequelize.define("products", {
         allowNull : true,
     },
     status : {
-        type : db.Sequelize.STRING(45),
+        type : db.Sequelize.INTEGER,
         allowNull : false,
-        defaultValue: "ready stock"
+        defaultValue: 1
     },
     
+},
+{ timestamps: false }
+)
+
+export const ProductCategories = db.sequelize.define("product_categories", {
+    id: {
+        type: db.Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false
+    },
+    productId: {
+        type: db.Sequelize.INTEGER,
+        allowNull : false
+    },
+    categoryId: {
+        type: db.Sequelize.INTEGER,
+        allowNull : false
+    },
 },
 { timestamps: false }
 )
@@ -98,12 +108,7 @@ export const Transaction = db.sequelize.define("transaction",{
     total_price: {
         type: db.Sequelize.INTEGER,
         allowNull : false
-    },
-    status: {
-        type: db.Sequelize.STRING(45),
-        allowNull: false,
-        defaultValue: "on process"
-    },
+    }
 },
 {timestamps: false}
 )
@@ -118,6 +123,9 @@ export const Items = db.sequelize.define("transaction_items",{
     invoice: {
         type: db.Sequelize.INTEGER,
         allowNull : false
+    },
+    created_at:{
+        type: db.Sequelize.TIME
     },
     transactionId: {
         type: db.Sequelize.INTEGER,
@@ -197,7 +205,12 @@ Items.belongsTo(Transaction, {foreignKey : 'transactionId'});
 Items.belongsTo(Product, {foreignKey : 'productId'});
 
 Product.hasMany(Items);
-Product.belongsTo(Category, {foreignKey : 'categoryId'});
 
-Category.hasMany(Product);
-Category.belongsTo(Category, {foreignKey : 'parent'});
+Product.belongsToMany(Category, { through : ProductCategories, foreignKey : 'productId' });
+Category.belongsToMany(Product, {through : ProductCategories, foreignKey : 'categoryId'});
+Product.hasMany(ProductCategories,{ as : 'productCategory' });
+ProductCategories.belongsTo(Product);
+Category.hasMany(ProductCategories,{ as : 'categoryProduct' });
+ProductCategories.belongsTo(Category);
+
+Category.hasMany(Category, {foreignKey : 'parent'});

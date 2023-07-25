@@ -1,5 +1,5 @@
 import { Router } from "express"
-import verifyUser from "../../middleware/token.verify.js"
+import { verifyAdmin, verifyUser } from "../../middleware/token.verify.js"
 import * as ProductControllers from "./index.js"
 import { createCloudinaryStorage, createUploader } from "../../helpers/uploader.js"
 
@@ -8,18 +8,16 @@ const uploader = createUploader(storage)
 const router = Router()
 
 router.get("/", verifyUser, ProductControllers.allProduct)
-router.post("/", verifyUser, ProductControllers.addProduct)
+router.post("/", verifyAdmin, uploader.single("file"), ProductControllers.addProduct)
 router.get("/category", verifyUser, ProductControllers.allCategory)
-router.post("/category", verifyUser, ProductControllers.addCategory)
-router.patch("/category", verifyUser, ProductControllers.changeCategoryStatus)
-router.delete("/category", verifyUser, ProductControllers.deleteCategory)
+router.post("/category", verifyAdmin, ProductControllers.addCategory)
+router.patch("/change-category-details/:category_id", verifyAdmin, ProductControllers.changeDetailCategory)
 router.get("/category/subcategory", verifyUser, ProductControllers.parentCategory)
+router.delete("/category/:category_id", verifyAdmin, ProductControllers.deleteCategory)
+router.put("/category/:category_id", verifyAdmin, ProductControllers.restoreCategory)
 router.get("/:product_id", verifyUser, ProductControllers.productDetails)
-router.patch("/change-name", verifyUser, ProductControllers.changeName)
-router.patch("/change-price", verifyUser, ProductControllers.changePrice)
-router.patch("/change-desc", verifyUser, ProductControllers.changeDesc)
-router.patch("/change-category", verifyUser, ProductControllers.changeCategory)
-router.patch("/change-image/:product_id", verifyUser, uploader.single("file"), ProductControllers.changeImage)
-router.patch("/change-status/", verifyUser, ProductControllers.changeStatus)
+router.delete("/:product_id", verifyAdmin, ProductControllers.deleteProduct)
+router.patch("/change-product-details/:product_id", verifyAdmin, ProductControllers.changeDetailProduct)
+router.patch("/change-image/:product_id", verifyAdmin, uploader.single("file"), ProductControllers.changeImage)
 
 export default router
