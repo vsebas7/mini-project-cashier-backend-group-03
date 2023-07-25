@@ -1,6 +1,6 @@
 import { Category, Product, ProductCategories } from "../../models/all_models.js"
 import { ValidationError } from "yup"
-import { Op } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import * as errorMiddleware from "../../middleware/error.handler.js"
 import * as validation from "./validation.js"
 import db from "../../models/index.js"
@@ -97,27 +97,6 @@ export const addProduct = async (req, res, next) =>{
             message : errorMiddleware.PRODUCT_ALREADY_EXIST 
         })
 
-        const categoryParent = await Category?.findAll({
-            where: {
-                id : category
-            }
-        })
-        
-        let parent = categoryParent[0].dataValues.parent
-        
-        const listCaterogyParent = [ category ]
-        
-        while(parent !== null){
-            let listCategory = await Category?.findAll({
-                where: {
-                    id : parent
-                }
-            })
-            parent = listCategory[0].dataValues.parent
-            
-            listCaterogyParent.push(listCategory[0].dataValues.id)
-        }
-
         const product = await Product?.create({
             name,
             price,
@@ -140,12 +119,31 @@ export const addProduct = async (req, res, next) =>{
             })
         }
 
-        for(let i = 0; i < listCaterogyParent.length; i++){
-            await ProductCategories.create({
+        const categoryParent = await db.sequelize.query(
+            `WITH RECURSIVE category_path (id, name, parent) AS
+            (
+                SELECT id, name, parent
+                    FROM categories
+                    WHERE id = ${category} 
+                UNION ALL
+                SELECT c.id, c.name, c.parent
+                    FROM category_path AS cp JOIN categories AS c
+                    ON cp.parent = c.id
+            )
+            SELECT * FROM category_path;`, 
+            { type: QueryTypes.SELECT }
+        )
+
+        const categoriesData = []
+
+        for(let i = 0; i < categoryParent[0].length; i++){
+            categoriesData.push({ 
                 productId : product.dataValues.id,
-                categoryId : listCaterogyParent[i]
+                categoryId : categoryParent[0][i].id
             })
         }
+
+        await ProductCategories.bulkCreate(categoriesData)
 
         res.status(200).json({ 
             type: "success", 
@@ -416,234 +414,6 @@ export const deleteProduct = async (req, res, next) => {
         await transaction.commit();
     } catch (error) {
         await transaction.rollback();
-        next(error)
-    }
-}
-
-export const allCategory = async (req, res, next) => {
-    try {
-        const category = await Category?.findAll({
-            where: {
-                status : req.query.status ? req.query.status : 1
-            }
-        })
-
-        if(!category.length) throw ({
-            type : "error",
-            status : errorMiddleware.NOT_FOUND_STATUS,
-            message : errorMiddleware.DATA_NOT_FOUND
-        })
-
-        res.status(200).json({
-            type : "success",
-            message : "Data berhasil dimuat",
-            category : category
-        })
-
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const addCategory = async (req, res, next) => {
-    try {
-        await validation.AddCategoryValidationSchema.validate(req.body);
-
-        const categoryIsExists = await Category?.findAll({
-            where : {
-                name : req.body.name
-            }
-        })
-
-        if(categoryIsExists.length) throw({
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST_STATUS,
-            message : errorMiddleware.CATEGORY_ALREADY_EXIST
-        })
-
-        req.body.status = 1
-
-        const category = await Category.create( req.body )
-        res.status(200).json({
-            type : "success",
-            message : "Data berhasil dimuat",
-            category : category
-        })
-
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const changeDetailCategory = async (req, res, next) => {
-    try {
-        await validation.ChangeCategoryDetailValidationSchema.validate(req.body);
-
-        const categoryIsExist = await Category?.findOne({
-            where : {
-                id : req.params.category_id
-            }
-        })
-
-        if(!categoryIsExist) throw ({
-            type : "error",
-            status : errorMiddleware.NOT_FOUND_STATUS,
-            message : errorMiddleware.CATEGORY_NOT_FOUND
-        })
-
-        const categoryNameIsExist = await Category?.findOne({
-            where : {
-                name : req.body.name,
-                [Op.not]:[
-                    {
-                        id : req.params.category_id
-                    }
-                ]
-            }
-        })
-
-        if(categoryNameIsExist) throw ({
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST_STATUS,
-            message : errorMiddleware.CATEGORY_ALREADY_EXIST
-        })
-
-        if(req.params.category_id === req.body.parent) throw ({
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST_STATUS,
-            message : errorMiddleware.BAD_REQUEST
-        })
-
-        await Category.update(
-            req.body, 
-            { 
-                where : { 
-                    id : req.params.category_id
-                } 
-            }
-        )
-
-        const category = await Category?.findOne({
-            where : { 
-                id : req.params.category_id
-            } 
-        })
-
-        res.status(200).json({
-            type : "success",
-            message : "Category detail berhasil diganti",
-            category 
-        })
-
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const parentCategory = async (req, res, next) => {
-    try {
-        const parent = await Category?.findAll({
-            where : {
-               [Op.not]:[
-                { parent : null },
-                { status : 1 }
-               ]
-            },
-            attributes : {
-                exclude : ["status"]
-            }
-        })
-
-        res.status(200).json({
-            type : "success",
-            message : "Data berhasil dimuat",
-            category : parent
-        })
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const deleteCategory = async (req, res, next) => {
-    try {
-
-        const categoryIsExist = await Category?.findAll({
-            where : {
-               id : req.params.category_id
-            }
-        })
-
-        const categoryIsDeleted = await Category?.findOne({
-            where : {
-                status : 0,
-                id : req.params.category_id
-            }
-        })
-
-        if(categoryIsDeleted || !categoryIsExist.length) throw ({
-            type : "error",
-            status : errorMiddleware.NOT_FOUND_STATUS,
-            message : errorMiddleware.CATEGORY_NOT_FOUND
-        })
-
-        await Category?.update(
-            {
-                status : 0
-            },
-            {
-                where : {
-                    id : req.params.category_id
-                }
-            }
-        )
-
-        res.status(200).json({
-            type : "success",
-            message : "Category berhasil dihapus",
-        })
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const restoreCategory = async (req, res, next) => {
-    try {
-
-        const categoryIsExist = await Category?.findAll({
-            where : {
-               id : req.params.category_id
-            }
-        })
-
-        const categoryIsAvailable = await Category?.findOne({
-            where : {
-                status : 1,
-                id : req.params.category_id
-            }
-        })
-
-        if(categoryIsAvailable || !categoryIsExist.length) throw ({
-            type : "error",
-            status : errorMiddleware.NOT_FOUND_STATUS,
-            message : errorMiddleware.CATEGORY_NOT_FOUND
-        })
-
-        await Category?.update(
-            {
-                status : 1
-            },
-            {
-                where : {
-                    id : req.params.category_id
-                }
-            }
-        )
-
-        res.status(200).json({
-            type : "success",
-            message : "Category berhasil dikembalikan",
-        })
-    } catch (error) {
         next(error)
     }
 }

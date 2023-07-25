@@ -91,12 +91,16 @@ export const Role = db.sequelize.define("roles",{
 { timestamps: false }
 )
 
-export const Transaction = db.sequelize.define("transaction",{
+export const Transaction = db.sequelize.define("transactions",{
     id: {
         type: db.Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false
+    },
+    invoice: {
+        type: db.Sequelize.STRING(45),
+        allowNull : false
     },
     created_at:{
         type: db.Sequelize.TIME
@@ -119,10 +123,6 @@ export const Items = db.sequelize.define("transaction_items",{
         primaryKey: true,
         autoIncrement: true,
         allowNull: false
-    },
-    invoice: {
-        type: db.Sequelize.INTEGER,
-        allowNull : false
     },
     created_at:{
         type: db.Sequelize.TIME
@@ -213,4 +213,4 @@ ProductCategories.belongsTo(Product);
 Category.hasMany(ProductCategories,{ as : 'categoryProduct' });
 ProductCategories.belongsTo(Category);
 
-Category.hasMany(Category, {foreignKey : 'parent'});
+Category.hasMany(Category, {as : 'sub_category', foreignKey : 'parent'});

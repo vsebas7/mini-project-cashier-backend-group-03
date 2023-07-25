@@ -210,14 +210,6 @@ export const resetPassword = async (req, res, next) => {
 
 export const getCashier = async (req, res, next) =>{
     try {
-        const { roleId } = req.user;
-        
-        if(roleId !== 1 ) throw ({ 
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED, 
-            message : errorMiddleware.UNAUTHORIZED_STATUS 
-        });
-
         const cashier = await User?.findAll(
             {
                 where : {
@@ -242,14 +234,6 @@ export const getCashier = async (req, res, next) =>{
 export const registerCashier = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     try {
-        const { roleId } = req.user;
-        
-        if(roleId !== 1 ) throw ({ 
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED, 
-            message : errorMiddleware.UNAUTHORIZED_STATUS 
-        });
-
         const { username, email, password  } = req.body;
 
         await validation.RegisterValidationSchema.validate(req.body);
@@ -340,14 +324,6 @@ export const registerCashier = async (req, res, next) => {
 export const changeStatus = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     try {
-        const { roleId } = req.user;
-        
-        if(roleId !== 1 ) throw ({ 
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED, 
-            message : errorMiddleware.UNAUTHORIZED_STATUS 
-        });
-
         const { idCashier, updateStatus } = req.body;
 
         const userExists = await User?.findOne({ 
