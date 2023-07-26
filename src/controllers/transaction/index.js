@@ -1,7 +1,9 @@
 import moment from "moment"
+import { Transaction } from "../../models/all_models.js"
 import * as errorMiddleware from "../../middleware/error.handler.js"
 import * as validation from "./validation.js"
 import db from "../../models/index.js"
+import { Transaction } from "sequelize"
 
 export const invoiceTransaction = (transactionId) => {
     const createdInvoice = moment().format('YYYYMMDD')
@@ -171,4 +173,26 @@ export const updateCartItem = async (req, res, next) => {
         await transaction.rollback()
             next(error)
     }
+}
+
+// checkout transaction
+export const checkout = async (req, res, next) => {
+    const transaction = await db.sequelize.transaction()
+    try {
+        const { roleId } = req.user
+        
+        if(roleId!== 2) throw ({
+            type : "error",
+            status : errorMiddleware.UNAUTHORIZED,
+            message : errorMiddleware.UNAUTHORIZED_STATUS
+        })
+
+        const { transactionId } = req.params;
+
+        const cartItems = await Transaction?.findAll({
+            where: { transactionId },
+            attributes : ['total_price', 'qty']
+        })
+
+    } catch (error) {}
 }
