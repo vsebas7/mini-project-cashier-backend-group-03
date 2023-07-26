@@ -1,5 +1,5 @@
 import moment from "moment"
-import { Transaction } from "../../models/all_models.js"
+import { Product, Transaction } from "../../models/all_models.js"
 import * as errorMiddleware from "../../middleware/error.handler.js"
 import * as validation from "./validation.js"
 import db from "../../models/index.js"
@@ -13,8 +13,8 @@ export const invoiceTransaction = (transactionId) => {
 // contoh INV-20230726123
 
 
-// add product to cart
-export const addToCart = async (req, res, next) => {
+// Cashier can add product to cart (before create transaction)
+export const addProductToCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
     try {
         const { roleId } = req.user
@@ -33,13 +33,13 @@ export const addToCart = async (req, res, next) => {
             message : errorMiddleware.BAD_REQUEST_STATUS
         }
 
-        const exitingProduct = await Product.findOne({
+        const productExists = await Product.findOne({
             where : {
                 id : productId
             }
         })
 
-        if(!exitingProduct) {
+        if(!productExists) {
             throw ({
                 type : "error",
                 status : errorMiddleware.NOT_FOUND,
@@ -47,20 +47,24 @@ export const addToCart = async (req, res, next) => {
             })
         }
 
-        const product = await Product?.create({
+        // New entry for adding product to cart
+        const productInCart = await db.Items.create({
             transactionId,
             productId,
+            qty : 1,
+            total_price : productExists.price
         })
 
         res.status(200).json({
             type: "success",
-            message : "Berhasil menambahkan product ke keranjang."
+            message : `Berhasil menambahkan ${productExists.name} ke keranjang.`
         })
 
         await transaction.commit()
     }
     catch (error) {
         await transaction.rollback()
+        
         next(error)
     }
 }
