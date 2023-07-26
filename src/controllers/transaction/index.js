@@ -11,7 +11,7 @@ export const invoiceTransaction = (transactionId) => {
 // contoh INV-20230726123
 
 
-// add product to card
+// add product to cart
 export const addToCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
     try {
