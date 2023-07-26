@@ -11,8 +11,5 @@ router.post("/login", AdminValidation.LoginValidationSchema, AdminControllers.lo
 router.get("/keep_login", verifyUser, AdminControllers.keepLogin);
 router.put("/forgot-password", AdminValidation.EmailValidationSchema, AdminControllers.forgotPassword);
 router.patch("/reset-password", verifyUser, AdminValidation.resetPasswordSchema, AdminControllers.resetPassword);
-router.get("/cashier/", verifyUser, AdminControllers.getCashier);
-router.post("/cashier/register", verifyUser, AdminControllers.registerCashier);
-router.patch("/cashier/update-status", verifyUser, AdminControllers.changeStatus);
 
 export default router;
