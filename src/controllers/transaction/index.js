@@ -1,9 +1,8 @@
-import moment from "moment"
-import { Transaction } from "../../models/all_models.js"
+import { Product, ProductCategories, Category, Items, Transaction } from "../../models/all_models.js";
+import { Op, QueryTypes } from "sequelize";
 import * as errorMiddleware from "../../middleware/error.handler.js"
-import * as validation from "./validation.js"
-import db from "../../models/index.js"
-import { Transaction } from "sequelize"
+import moment from "moment";
+import db from "../../models/index.js";
 
 export const invoiceTransaction = (transactionId) => {
     const createdInvoice = moment().format('YYYYMMDD')
@@ -12,187 +11,62 @@ export const invoiceTransaction = (transactionId) => {
 
 // contoh INV-20230726123
 
-
-// add product to cart
-export const addToCart = async (req, res, next) => {
-    const transaction = await db.sequelize.transaction()
+// hapus jika tidak diperlukan
+export const addItemToCart = async (req, res, next) => {
     try {
         const { roleId } = req.user
 
         if(roleId !== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
+            type: "error",
+            status: errorMiddleware.UNAUTHORIZED,
+            message: errorMiddleware.UNAUTHORIZED_STATUS
         })
 
-        const { transactionId, productId } = req.body;
-
-        if (!transactionId || !productId) throw {
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST,
-            message : errorMiddleware.BAD_REQUEST_STATUS
-        }
-
-        const exitingProduct = await Product.findOne({
-            where : {
-                id : productId
-            }
-        })
-
-        if(!exitingProduct) {
-            throw ({
-                type : "error",
-                status : errorMiddleware.NOT_FOUND,
-                message : errorMiddleware.NOT_FOUND_STATUS
-            })
-        }
-
-        const product = await Product?.create({
-            transactionId,
-            productId,
-        })
-
-        res.status(200).json({
-            type: "success",
-            message : "Berhasil menambahkan product ke keranjang."
-        })
-
-        await transaction.commit()
-    }
-    catch (error) {
-        await transaction.rollback()
-        next(error)
-    }
-}
-
-// remove item from cart
-export const removeFromCart = async (req, res, next) => {
-    const transaction = await db.sequelize.transaction()
-    try {
-        const { roleId } = req.user
-        
-        if(roleId!== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
-        })
-
-        const { transactionId, productId } = req.params;
-
-        const exitingTransaction = await transaction.findOne({
-            where: { id: transactionId, productId}
-        })
-
-        if(!exitingTransaction) {
-            throw ({
-                type : "error",
-                status : errorMiddleware.NOT_FOUND,
-                message : errorMiddleware.NOT_FOUND_STATUS
-            })
-        }
-
-        // cek produk
-        const exitingProduct = await Product.findOne({
-                    where : {
-                        id : productId
-                    }
-                })
-
-        if(!exitingProduct) {
-            throw {
-                status: errorMiddleware.NOT_FOUND_STATUS,
-                message: "Produk tidak ditemukan di keranjang"
-            }
-        }
-
-        await Product.destroy({
-            where: { id: productId, transactionId }, transaction
-        })
-
-        res.status(200).json({
-            type: "success",
-            message : "Berhasil menghapus product dari keranjang."
-        })
-
-        await transaction.commit()
-    } catch (error) {
-        await transaction.rollback()
-        next(error)
-    }
-
-}
-
-// update quantity in cart
-export const updateCartItem = async (req, res, next) => {
-    const transaction = await db.sequelize.transaction()
-    try {
-        const { roleId } = req.user
-        
-        if(roleId!== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
-        })
-
-        const { transactionId, productId, qty } = req.params;
-
-        const exitingCartItem = await transaction.findOne({
-            where: { id: transactionId, productId}
-        })
-
-        if(!exitingCartItem) {
-            throw ({
-                type : "error",
-                status : errorMiddleware.NOT_FOUND,
-                message : errorMiddleware.NOT_FOUND_STATUS
-            })
-        }
-
-        // Update item quantity in cart
-        // Belum selesai
-        if (qty > 0) {
-            await Product.update(
-                {qty: qty}, 
-                {
-                where: { id: productId, transactionId }, transaction
-                })
+        const { productId, qty } = req.body;
+    
+        // Check if the product exists and is active
+        const existingProduct = await Product.findOne({
+            where: {
+            id: productId,
+            status: 1,
+            },
+        });
+    
+        if (!existingProduct) throw ({
+            type: "error",
+            status: errorMiddleware.BAD_REQUEST_STATUS,
+            message: "Product not found or inactive",
+        });
+    
+        // Check if the product is already in the cart
+        const existingCartItem = await Items.findOne({
+            where: {
+                transactionId: null, 
+                productId: productId,
+            },
+        });
+    
+        if (existingCartItem) {
+                const updatedQuantity = existingCartItem.qty + qty;
+                await existingCartItem.update({
+                qty: updatedQuantity,
+                total_price: existingProduct.price * updatedQuantity,
+            });
         } else {
-            await Product.destroy({
-                where: { id: productId, transactionId }, transaction
-            })
+                const totalPrice = existingProduct.price * qty;
+                await Items.create({
+                productId: productId,
+                qty: qty,
+                total_price: totalPrice,
+            });
         }
-
-        await transaction.commit()
-
+    
         res.status(200).json({
             type: "success",
-            message: "Berhasil update jumlah produk di keranjang"
-        })
-
+            message: "Product added to cart successfully",
+        });
     } catch (error) {
-        await transaction.rollback()
-            next(error)
+        next(error);
     }
-}
+};
 
-// checkout transaction
-export const checkout = async (req, res, next) => {
-    const transaction = await db.sequelize.transaction()
-    try {
-        const { roleId } = req.user
-        
-        if(roleId!== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
-        })
-
-        const { transactionId } = req.params;
-
-        const cartItems = await Transaction?.findAll({
-            where: { transactionId },
-            attributes : ['total_price', 'qty']
-        })
-
-    } catch (error) {}
-}
