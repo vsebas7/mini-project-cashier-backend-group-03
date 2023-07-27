@@ -155,6 +155,31 @@ export const createTransaction = async (req, res, next) => {
             { transaction }
         );
 
+        
+        // Generate invoice based on the new transaction's id?
+        const invoice = generateInvoice(newTransaction.id)
+
+        await newTransaction.update({
+            invoice : invoice,
+        }, { transaction }
+        )
+
+        // Update the items to link them to the transaction?
+        // const cartItems = await Items.findAll({
+        //     where: {
+        //     transactionId: null,
+        //     },
+        // });
+    
+        // for (const cartItem of cartItems) {
+        //     await cartItem.update(
+        //     {
+        //         transactionId: newTransaction.id,
+        //     },
+        //     { transaction }
+        //     );
+        // }
+
         await transaction.commit();
 
         res.status(200).json({
