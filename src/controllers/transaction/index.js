@@ -1,9 +1,8 @@
 import moment from "moment"
-import { Items, Product, Transaction } from "../../models/all_models.js"
+import { Transaction } from "../../models/all_models.js"
 import * as errorMiddleware from "../../middleware/error.handler.js"
-import * as validation from "./validation.js"
-import db from "../../models/index.js"
-import { Transaction } from "sequelize"
+import moment from "moment";
+import db from "../../models/index.js";
 
 export const invoiceTransaction = (transactionId) => {
     const createdInvoice = moment().format('YYYYMMDD')
@@ -13,19 +12,19 @@ export const invoiceTransaction = (transactionId) => {
 // contoh INV-20230726123
 
 
-// Cashier can add product to cart (before create transaction)
-export const addItemToCart = async (req, res, next) => {
+// add product to cart
+export const addToCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
     try {
         const { roleId } = req.user
 
         if(roleId !== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
+            type: "error",
+            status: errorMiddleware.UNAUTHORIZED,
+            message: errorMiddleware.UNAUTHORIZED_STATUS
         })
 
-        const { transactionId, productId, qty } = req.body;
+        const { transactionId, productId } = req.body;
 
         if (!transactionId || !productId) throw {
             type : "error",
@@ -33,14 +32,13 @@ export const addItemToCart = async (req, res, next) => {
             message : errorMiddleware.BAD_REQUEST_STATUS
         }
 
-        // const productExists = await Product.findOne({
-        //     where : {
-        //         id : productId,
-        //         name
-        //     }
-        // })
+        const exitingProduct = await Product.findOne({
+            where : {
+                id : productId
+            }
+        })
 
-        if(!productExists) {
+        if(!exitingProduct) {
             throw ({
                 type : "error",
                 status : errorMiddleware.NOT_FOUND,
@@ -48,31 +46,26 @@ export const addItemToCart = async (req, res, next) => {
             })
         }
 
-        // Create new entry for adding product to cart
-        const item = await Items.create({
+        const product = await Product?.create({
             transactionId,
             productId,
-            qty : 1,
-            total_price : productExists.price * qty
-        }, { transaction })
+        })
 
         res.status(200).json({
-            type : "success",
-            message : `Berhasil menambahkan ${productExists.name} ke keranjang.`,
-            productInCart : item
+            type: "success",
+            message : "Berhasil menambahkan product ke keranjang."
         })
 
         await transaction.commit()
     }
     catch (error) {
         await transaction.rollback()
-
         next(error)
     }
 }
 
 // remove item from cart
-export const removeItemFromCart = async (req, res, next) => {
+export const removeFromCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
     try {
         const { roleId } = req.user
@@ -163,42 +156,20 @@ export const updateCartItem = async (req, res, next) => {
                 where: { id: productId, transactionId }, transaction
                 })
         } else {
-            await Product.destroy({
-                where: { id: productId, transactionId }, transaction
-            })
+                const totalPrice = existingProduct.price * qty;
+                await Items.create({
+                productId: productId,
+                qty: qty,
+                total_price: totalPrice,
+            });
         }
-
-        await transaction.commit()
-
+    
         res.status(200).json({
             type: "success",
-            message: "Berhasil update jumlah produk di keranjang"
-        })
-
+            message: "Product added to cart successfully",
+        });
     } catch (error) {
-        await transaction.rollback()
-            next(error)
+        next(error);
     }
-}
+};
 
-// checkout transaction
-export const checkout = async (req, res, next) => {
-    const transaction = await db.sequelize.transaction()
-    try {
-        const { roleId } = req.user
-        
-        if(roleId!== 2) throw ({
-            type : "error",
-            status : errorMiddleware.UNAUTHORIZED,
-            message : errorMiddleware.UNAUTHORIZED_STATUS
-        })
-
-        const { transactionId } = req.params;
-
-        const cartItems = await Transaction?.findAll({
-            where: { transactionId },
-            attributes : ['total_price', 'qty']
-        })
-
-    } catch (error) {}
-}
