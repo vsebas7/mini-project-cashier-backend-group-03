@@ -73,8 +73,9 @@ export const createTransaction = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     
     try {
-        const { userId, total_price } = req.body
 
+        const { userId, total_price } = req.body
+        
         // Create a new transaction
         const newTransaction = await Transaction.create(
             {
