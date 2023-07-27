@@ -13,14 +13,6 @@ export const generateInvoice = (transactionId) => {
 export const addItemToCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
     try {
-        const { roleId } = req.user
-
-        if(roleId !== 2) throw ({
-            type: "error",
-            status: errorMiddleware.UNAUTHORIZED,
-            message: errorMiddleware.UNAUTHORIZED_STATUS
-        })
-
         const { productId, qty } = req.body;
     
         // Check if the product exists and is active
