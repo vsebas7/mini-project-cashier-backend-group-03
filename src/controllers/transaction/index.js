@@ -4,13 +4,14 @@ import * as errorMiddleware from "../../middleware/error.handler.js"
 import moment from "moment";
 import db from "../../models/index.js";
 
-export const invoiceTransaction = (transactionId) => {
+export const generateInvoice = (transactionId) => {
     const createdInvoice = moment().format('YYYYMMDD')
     return `INV-${createdInvoice}${transactionId}`
 } // contoh INV-20230726123
 
 // hapus jika tidak diperlukan
 export const addItemToCart = async (req, res, next) => {
+    const transaction = await db.sequelize.transaction()
     try {
         const { roleId } = req.user
 
@@ -69,66 +70,99 @@ export const addItemToCart = async (req, res, next) => {
 };
 
 // belum diujicoba
+// id, invoice, transactionID, productId, qty, total_price
+// export const createTransaction = async (req, res, next) => {
+//     const transaction = await db.sequelize.transaction();
+//     try {
+//         // Get all items in the cart
+//         const cartItems = await Items.findAll({
+//             where: {
+//                 transactionId: null, 
+//             },
+//             include: {
+//                 model: Product,
+//                 attributes: ["name", "price"],
+//             },
+//         });
+    
+//         if (cartItems.length === 0) {
+//             throw {
+//                 type: "error",
+//                 status: errorMiddleware.BAD_REQUEST_STATUS,
+//                 message: "Cart is empty. Add items before creating a transaction.",
+//             };
+//         }
+    
+//         // Calculate the total price of the transaction? Is it needed?
+//         let totalPrice = 0;
+//         for (const cartItem of cartItems) {
+//             totalPrice += cartItem.total_price;
+//         }
+    
+//         // Create a new transaction with the items in the cart
+//         const newTransaction = await Transaction.create(
+//             {
+//                 invoice: generateInvoice(),
+//                 created_at: moment().format("YYYY-MM-DD HH:mm:ss"),
+//                 userId: req.user.id,
+//                 total_price: totalPrice,
+//                 items: cartItems,
+//             },
+//             {
+//                 include: {
+//                     model: Items,
+//             },
+//                 transaction,
+//             }
+//         );
+    
+//         // Update the items to link them to the transaction
+//         for (const cartItem of cartItems) {
+//             await cartItem.update({
+//                 transactionId: newTransaction.id,
+//             },
+//             { transaction }
+//             );
+//         }
+    
+//         await transaction.commit();
+    
+//         res.status(200).json({
+//             type: "success",
+//             message: "Transaction created successfully",
+//         });
+//     } catch (error) {
+//         await transaction.rollback();
+//         next(error);
+//     }
+// }
+
+
 export const createTransaction = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
+    
     try {
-        // Get all items in the cart
-        const cartItems = await Items.findAll({
-            where: {
-                transactionId: null, 
-            },
-            include: {
-                model: Product,
-                attributes: ["name", "price"],
-            },
-        });
-    
-        if (cartItems.length === 0) {
-            throw {
-                type: "error",
-                status: errorMiddleware.BAD_REQUEST_STATUS,
-                message: "Cart is empty. Add items before creating a transaction.",
-            };
-        }
-    
-        // Calculate the total price of the transaction? Is it needed?
-        let totalPrice = 0;
-        for (const cartItem of cartItems) {
-            totalPrice += cartItem.total_price;
-        }
-    
-        // Create a new transaction with the items in the cart
+        const { userId, total_price } = req.body
+
+        // Create a new transaction
         const newTransaction = await Transaction.create(
             {
-                invoice: invoiceTransaction(),
+                invoice: generateInvoice(),
                 created_at: moment().format("YYYY-MM-DD HH:mm:ss"),
-                userId: req.user.id,
-                total_price: totalPrice,
-                items: cartItems,
-            },
-            {
-                include: {
-                    model: Items,
-            },
-                transaction,
-            }
-        );
-    
-        // Update the items to link them to the transaction
-        for (const cartItem of cartItems) {
-            await cartItem.update({
-                transactionId: newTransaction.id,
+                userId: userId,
+                total_price: total_price,
             },
             { transaction }
-            );
-        }
-    
+        );
+
         await transaction.commit();
-    
+
         res.status(200).json({
             type: "success",
             message: "Transaction created successfully",
+            data: newTransaction
         });
+
     } catch (error) {
         await transaction.rollback();
         next(error);
