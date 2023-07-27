@@ -1,5 +1,5 @@
 import { Router } from "express"
-import verifyUser from "../../middleware/token.verify.js"
+import { verifyUser } from "../../middleware/token.verify.js"
 import * as TransactionController from "./index.js"
 
 const router = Router()
