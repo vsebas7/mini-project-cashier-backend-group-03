@@ -5,8 +5,8 @@ import * as TransactionController from "./index.js"
 const router = Router()
 
 // router.get("/, verifyUser, TransactionController.")
-router.post("/", verifyUser, TransactionController.addToCart)
-router.patch("/", verifyUser, TransactionController.updateCartItem)
-router.delete("/", verifyUser, TransactionController.removeFromCart)
+router.post("/", verifyUser,TransactionController.addItemToCart)
+// router.patch("/", verifyUser, TransactionController.updateItemInCart)
+router.delete("/", verifyUser, TransactionController.removeItemFromCart)
 
 export default router
