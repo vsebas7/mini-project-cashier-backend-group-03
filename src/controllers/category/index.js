@@ -8,7 +8,7 @@ export const allCategory = async (req, res, next) => {
     try {
         const category = await Category?.findAll({
             where: {
-                status : req.query.status ? req.query.status : 1
+                status : req.query.status ? req.query.status : 1,
             }
         })
 

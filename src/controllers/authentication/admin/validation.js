@@ -14,7 +14,9 @@ export const RegisterValidationSchema = Yup.object({
         .minSymbols(1, "Password must contain at least 1 special character")
         .minNumbers(1,"Password must contain at least 1 number"),
         
-    email : Yup.string().email("Invalid email")
+    email : Yup.string()
+        .email("Invalid email")
+        .required("Email is required")
 })
 
 export const LoginValidationSchema = Yup.object({
@@ -40,7 +42,7 @@ export const changePasswordSchema = Yup.object({
         .oneOf([Yup.ref('newPassword'), null], 'Must match "New Password" field value'),
 });
 
-export const resetPasswordSchema = Yup.object().shape({
+export const resetPasswordValidationSchema = Yup.object().shape({
   password : Yup.string()
         .required("Password is required")
         .min(6, "Password must contain 6 or more characters with at least one of each: uppercase, special character and number")

@@ -177,18 +177,10 @@ export const User = db.sequelize.define("users", {
         defaultValue: 0
     },
     status : {
-        type : db.Sequelize.STRING(45),
+        type : db.Sequelize.INTEGER,
         allowNull : false,
-        defaultValue : "user"
-    },
-    token : {
-        type : db.Sequelize.TEXT("long"),
-        allowNull : true,
-    },
-    expired_token : {
-        type : db.Sequelize.TIME,
-        allowNull : true,
-    },
+        defaultValue : 1
+    }
 },
 { timestamps: false }
 )
