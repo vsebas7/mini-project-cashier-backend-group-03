@@ -40,3 +40,28 @@ export async function verifyAdmin(req, res, next) {
         })
     }
 }
+
+export async function verifyCashier(req, res, next) {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) throw ({ 
+            type : "error",
+            message : "Unauthorized" 
+        });   
+
+        const decoded = verifyToken(token);
+    
+        if (decoded?.roleId !== 2) throw ({
+            type: "error",
+            message: "Unauthorized?",
+            });
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            type: "error",
+            message: "Unauthorized...",
+            data : null
+        });
+    }
+  }
