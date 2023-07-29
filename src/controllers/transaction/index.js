@@ -1,7 +1,6 @@
 import moment from "moment"
 import { Transaction } from "../../models/all_models.js"
 import * as errorMiddleware from "../../middleware/error.handler.js"
-import moment from "moment";
 import db from "../../models/index.js";
 
 export const generateInvoice = (transactionId) => {
