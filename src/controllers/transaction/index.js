@@ -181,35 +181,6 @@ export const updateItemInCart = async (req, res, next) => {
     }
 }
 
-export const getCart = async (req, res) => {
-    try {
-        const { transactionId } = req.params
-
-        const cartItems = await Items.findAll({
-            where: {
-                transactionId: transactionId
-            }
-        })
-
-        let total_price = 0
-
-        // Menghitung total_price dari cart items
-        cartItems.forEach(item => {
-            total_price += item.total_price
-        })
-
-        res.status(200).json({
-            type: "success",
-            message: "Menghitung total cart item",
-            data: {
-                items: cartItems,
-                total_price: total_price
-            }
-        })
-    } catch (error) {
-        next(error)
-    }
-}
 
 // akhir dari transaksi di tabel Transactions
 
