@@ -8,6 +8,6 @@ router.post("/cart", verifyCashier, TransactionController.addItemToCart)
 router.delete("/cart/:itemId", verifyCashier, TransactionController.removeItemFromCart)
 router.patch("/cart/:itemId", verifyCashier, TransactionController.updateItemInCart)
 router.post("/", verifyCashier, TransactionController.createTransaction)
-router.get("cart/", verifyCashier, TransactionController.getCart)
+router.get("/cart", verifyCashier, TransactionController.getCart)
  
 export default router
