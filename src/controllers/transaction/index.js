@@ -1,6 +1,6 @@
 import moment from "moment"
 import { Op, QueryTypes } from "sequelize"
-import { Transaction, Items } from "../../models/all_models.js"
+import { Product, Transaction, Items } from "../../models/all_models.js"
 import * as errorMiddleware from "../../middleware/error.handler.js"
 import db from "../../models/index.js";
 
@@ -65,7 +65,22 @@ export const addItemToCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
 
     try {
-        const { transactionId, productId, qty, total_price } = req.body
+        const { transactionId, productId, qty } = req.body
+
+        const productExists = await Product.findOne({
+            where: {
+                id: productId,
+                status: 1
+            }
+        })
+
+        if (!productExists) throw {
+            type: "error",
+            status: errorMiddleware.BAD_REQUEST_STATUS,
+            message: "Produk tidak dapat ditemukan atau tidak tersedia"
+        }
+
+        const total_price = productExists.price * qty
 
         await Items.create ({
             created_at: moment().format("YYYY-MM-DD HH:mm:ss"),
@@ -79,7 +94,7 @@ export const addItemToCart = async (req, res, next) => {
 
         res.status(200).json({
             type: "success",
-            message: "Success yeah"
+            message: `${productExists.name} berhasil ditambahkan`
         })
     } catch (error) {
         await transaction.rollback()
@@ -91,15 +106,18 @@ export const removeItemFromCart = async (req, res, next) => {
     const transaction = await db.sequelize.transaction()
 
     try {
-        const {itemId} = req.params
+        const { itemId } = req.params
 
         //  Mencari cart item dengan itemId (id di transaction_item)
         const cartItem = await Items.findByPk(itemId)
 
         if (!cartItem) throw {
             type: "erorr",
-            message: "Sorry, cart item can not be found"
+            status: errorMiddleware.NOT_FOUND_STATUS,
+            message: "Produk tidak ditemukan"
         }
+
+        // const productExists = cartItem.Product?.[0]?.name
 
         // Menghapus isi kolom cart item dari tabel transaction_item
         await cartItem.destroy({ transaction})
@@ -108,7 +126,7 @@ export const removeItemFromCart = async (req, res, next) => {
 
         res.status(200).json({
             type: "success",
-            message: "Selamat, item produk telah lenyap." //please change it later
+            message: `Produk berhasil dihapus`
         })
     } catch (error) {
         await transaction.rollback()
@@ -116,6 +134,82 @@ export const removeItemFromCart = async (req, res, next) => {
         next(error)
     }
 }
+
+//masih belum disempurnakan
+export const updateItemInCart = async (req, res, next) => {
+    const transaction = await db.sequelize.transaction()
+
+    try {
+        const { productId, qty } = req.body
+        const { itemId } = req.params
+
+        // Mencari cart item dengan itemId (id di transaction_item)
+        const cartItem = await Items.findByPk(itemId)
+        
+        if (!cartItem) throw {
+            type: "error",
+            status: errorMiddleware.NOT_FOUND_STATUS,
+            message: "Maaf, produk di keranjang tidak dapat ditemukan"
+        }
+
+        // Menghitung ulang total_price berdasarkan qty dan price produk yang terkait
+        const product = await Product.findByPk(cartItem.productId)
+
+        if (!product) throw {
+            type: "error",
+            status: errorMiddleware.BAD_REQUEST_STATUS,
+            message: "Maaf, produk yang terkait sudah tidak ada"
+        }
+        const total_price = product.price * qty
+        
+
+        // Mengubah isi kolom cart item dari tabel transaction_item
+        await cartItem.update({
+            qty: qty,
+            total_price: total_price,
+        }, {transaction})
+
+        await transaction.commit()
+
+        res.status(200).json({
+            type: "success",
+            "message": "Keranjang berhasil diupdate"
+        })
+    } catch (error) {
+        await transaction.rollback()
+        next(error)
+    }
+}
+
+// export const getCart = async (req, res) => {
+//     try {
+//         const { transactionId } = req.params
+
+//         const cartItems = await Items.findAll({
+//             where: {
+//                 transactionId: transactionId
+//             }
+//         })
+
+//         let total_price = 0
+
+//         // Menghitung total_price dari cart items
+//         cartItems.forEach(item => {
+//             total_price += item.total_price
+//         })
+
+//         res.status(200).json({
+//             type: "success",
+//             message: "Menghitung total cart item",
+//             data: {
+//                 items: cartItems,
+//                 total_price: total_price
+//             }
+//         })
+//     } catch (error) {
+//         next(error)
+//     }
+// }
 
 // akhir dari transaksi di tabel Transactions
 
