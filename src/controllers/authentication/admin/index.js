@@ -27,7 +27,7 @@ export const login = async (req, res, next) => {
 
         if (!userExists) throw ({ 
             status : errorMiddleware.BAD_REQUEST_STATUS, 
-            message : errorMiddleware.USER_DOES_NOT_EXISTS 
+            message : errorMiddleware.USER_NOT_FOUND 
         })
         
         const isPasswordCorrect = encryption.comparePassword(password, userExists?.dataValues?.password);
@@ -65,10 +65,10 @@ export const login = async (req, res, next) => {
 
 export const keepLogin = async (req, res, next) => {
     try {
-        const users = await User?.findAll(
+        const users = await User?.findOne(
             { 
                 where : {
-                    id : req.user.id
+                    id : req.user
                 },
                 attributes : {
                     exclude : ["password"]
@@ -78,6 +78,7 @@ export const keepLogin = async (req, res, next) => {
 
         res.status(200).json({ 
             type : "success",
+            message : "Data berhasil dimuat",
             users : users
         })
     } catch (error) {
@@ -97,26 +98,14 @@ export const forgotPassword = async (req, res, next) => {
 
         if (!isUserExist) throw ({ 
             status : errorMiddleware.BAD_REQUEST_STATUS, 
-            message : errorMiddleware.USER_DOES_NOT_EXISTS 
+            message : errorMiddleware.USER_NOT_FOUND 
         })
 
         const accessToken = tokenHelper.createToken({ 
             id : isUserExist?.dataValues?.id,
             username : isUserExist?.dataValues?.username,
-            token_created : moment().format("YYYY-MM-DD HH:mm:ss")
+            expiredAt : moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss")
         });
-
-        await User?.update(
-            { 
-                token : accessToken,
-                expired_token : moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss")
-            }, 
-            { 
-                where : { 
-                    id : isUserExist?.dataValues?.id
-                } 
-            }
-        )
 
         const template = fs.readFileSync(path.join(process.cwd(), "templates", "email.html"), "utf8");
 
@@ -154,17 +143,14 @@ export const resetPassword = async (req, res, next) => {
     try {
         const { password } = req.body;
 
-        await validation.resetPasswordSchema.validate(req.body);
+        await validation.resetPasswordValidationSchema.validate(req.body);
 
         const userExists = await User?.findOne(
             {
                 where: 
                 {
-                    id : req.user.id
-                },
-                attributes : {
-                    exclude : ["token","expired_token"]
-                } 
+                    id : req.user
+                }
             }
         );
 
@@ -177,13 +163,11 @@ export const resetPassword = async (req, res, next) => {
 
         await User?.update(
             { 
-                password: hashedPassword,
-                token : null,
-                expired_token : null 
+                password: hashedPassword
             }, 
             { 
                 where: {
-                    id: req.user.id
+                    id: req.user
                 }
             }
         );
@@ -216,14 +200,40 @@ export const getCashier = async (req, res, next) =>{
                     roleId : 2
                 },
                 attributes : {
-                    exclude : ["password","image","token","expired_token"]
+                    exclude : ["password"]
                 } 
             }
         )
 
         res.status(200).json({
             type : "success",
-            cashier
+            message : "Data berhasil dimuat",
+            cashier : cashier
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const getCashierDetail = async (req, res, next) =>{
+    try {
+
+        const cashier = await User?.findAll(
+            {
+                where : {
+                    id : req.params.idCashier
+                },
+                attributes : {
+                    exclude : ["password"]
+                } 
+            }
+        )
+
+        res.status(200).json({
+            type : "success",
+            message : "Data berhasil dimuat",
+            cashier : cashier
         })
 
     } catch (error) {
@@ -260,7 +270,7 @@ export const registerCashier = async (req, res, next) => {
             email,
             password : hashedPassword,
             roleId : 2,
-            status : "active"
+            status : 1
         });
 
         const accessToken = tokenHelper.createToken({ 
@@ -321,10 +331,10 @@ export const registerCashier = async (req, res, next) => {
     }
 }
 
-export const changeStatus = async (req, res, next) => {
+export const deactiveCashier = async (req, res, next) => {
     const transaction = await db.sequelize.transaction();
     try {
-        const { idCashier, updateStatus } = req.body;
+        const { idCashier } = req.body;
 
         const userExists = await User?.findOne({ 
             where : { 
@@ -339,7 +349,7 @@ export const changeStatus = async (req, res, next) => {
 
         await User?.update(
             { 
-                status : updateStatus
+                status : 0
             }, 
             { 
                 where : { 
@@ -350,7 +360,7 @@ export const changeStatus = async (req, res, next) => {
 
         res.status(200).json({ 
             type : "success",
-            message : "Change Status Success" 
+            message : "Deactive cashier success" 
         })
 
         await transaction.commit();

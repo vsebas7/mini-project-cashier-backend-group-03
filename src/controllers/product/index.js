@@ -18,7 +18,6 @@ export const allProduct = async( req, res, next) => {
         const filter = { id_cat, product_name }
         if(id_cat) filter.id_cat={'categoryId' : id_cat,}
         if(product_name) filter.product_name = {name: {[Op.like]: `%${product_name}%`}}
-        console.log(filter)
         
         let sort = []
         if(sort_price) sort.push(['price', sort_price])
@@ -57,12 +56,12 @@ export const allProduct = async( req, res, next) => {
         res.status(200).json({
             type: "success", 
             message: "Data berhasil dimuat", 
-            data: {
+            product: {
                 current_page: page ? page : 1,
                 total_pages : pages,
                 total_products : total,
                 products_limit : options.limit,
-                products,
+                list : products,
             }
         })
 
@@ -130,8 +129,7 @@ export const addProduct = async (req, res, next) =>{
                     FROM category_path AS cp JOIN categories AS c
                     ON cp.parent = c.id
             )
-            SELECT * FROM category_path;`, 
-            { type: QueryTypes.SELECT }
+            SELECT * FROM category_path;`
         )
 
         const categoriesData = []
@@ -203,7 +201,7 @@ export const productDetails = async (req, res, next) =>{
         res.status(200).json({
             type : "success",
             message : "Data berhasil dimuat",
-            product : product
+            product : [product]
         })
     } catch (error) {
         next(error)

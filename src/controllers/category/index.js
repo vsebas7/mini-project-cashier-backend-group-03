@@ -8,7 +8,7 @@ export const allCategory = async (req, res, next) => {
     try {
         const category = await Category?.findAll({
             where: {
-                status : req.query.status ? req.query.status : 1
+                status : req.query.status ? req.query.status : 1,
             }
         })
 
@@ -128,11 +128,11 @@ export const subCategory = async (req, res, next) => {
     try {
         const { categoryId } = req.query
 
-        if(!Number(categoryId) && !categoryId ) throw ({
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST_STATUS,
-            message : errorMiddleware.BAD_REQUEST
-        })
+        // if(!Number(categoryId) && !categoryId ) throw ({
+        //     type : "error",
+        //     status : errorMiddleware.BAD_REQUEST_STATUS,
+        //     message : errorMiddleware.BAD_REQUEST
+        // })
 
         const listCategory =  await db.sequelize.query(
             `WITH RECURSIVE category_path (id, name, parent) AS
@@ -168,24 +168,24 @@ export const subCategory = async (req, res, next) => {
 export const deleteCategory = async (req, res, next) => {
     try {
 
-        const { categoryId } = req.params
+        const { category_id } = req.params
 
-        if(!Number(categoryId) && !categoryId ) throw ({
-            type : "error",
-            status : errorMiddleware.BAD_REQUEST_STATUS,
-            message : errorMiddleware.BAD_REQUEST
-        })
+        // if(!Number(category_id) || !category_id ) throw ({
+        //     type : "error",
+        //     status : errorMiddleware.BAD_REQUEST_STATUS,
+        //     message : errorMiddleware.BAD_REQUEST
+        // })
 
         const categoryIsExist = await Category?.findAll({
             where : {
-               id : categoryId
+               id : category_id
             }
         })
 
         const categoryIsDeleted = await Category?.findOne({
             where : {
                 status : 0,
-                id : categoryId
+                id : category_id
             }
         })
 
@@ -201,7 +201,7 @@ export const deleteCategory = async (req, res, next) => {
             },
             {
                 where : {
-                    id : categoryId
+                    id : category_id
                 }
             }
         )
@@ -209,6 +209,42 @@ export const deleteCategory = async (req, res, next) => {
         res.status(200).json({
             type : "success",
             message : "Category berhasil dihapus",
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const categoryWithParentList = async (req, res, next) => {
+    try {
+
+        const listCategory =  await db.sequelize.query(
+            `
+            WITH RECURSIVE category_path (id, name, parent) AS
+            (
+                SELECT id, name, name as path
+                    FROM categories
+                    WHERE parent IS NULL
+                UNION ALL
+                SELECT c.id, c.name, CONCAT(cp.parent, ' > ', c.name)
+                    FROM category_path AS cp JOIN categories AS c
+                    ON cp.id = c.parent
+                    WHERE status LIKE 1
+            )
+            SELECT * FROM category_path`, 
+            { type: QueryTypes.SELECT }
+        )
+        
+        if(!listCategory.length) throw ({
+            type : "error",
+            status : errorMiddleware.NOT_FOUND_STATUS,
+            message : errorMiddleware.DATA_NOT_FOUND
+        })
+
+        res.status(200).json({
+            type : "success",
+            message : "Data berhasil dimuat",
+            category : listCategory
         })
     } catch (error) {
         next(error)
