@@ -7,9 +7,14 @@ import moment from "moment"
 
 export const allTransaction = async (req, res, next) => {
     try {
-        const {startFrom, endFrom} = req.query
+        const {startFrom, endFrom, page} = req.query
 
         const filter = {}
+
+        const options = {
+            offset: page > 1 ? parseInt(page - 1) * 10 : 0,
+            limit : 10,
+        }
         
         if(req.query.startFrom) {
             filter.created_at = {
@@ -19,6 +24,7 @@ export const allTransaction = async (req, res, next) => {
         }
 
         const transaction = await model.Transaction.findAll({
+            ...options,
             include : {
                 model : model.Items,
                 attributes : ['total_price','qty'],
@@ -32,29 +38,35 @@ export const allTransaction = async (req, res, next) => {
                         include : {
                             model : model.Category,
                             attributes : ['name'],
-                            where : {
-                                id : 3
-                            }
                         }
                     }
                 }
             },
             where : filter,
             order : [
-                ['created_at','ASC']
+                ['created_at','DESC']
             ]
         })
 
-        if(!transaction.length) throw ({
-            type : "error",
-            status : errorMiddleware.NOT_FOUND_STATUS,
-            message : errorMiddleware.DATA_NOT_FOUND
-        })
+        const total = await model.Transaction?.count();
+
+        const pages = Math.ceil(total / options.limit);
+    
+        if(!transaction.length) throw ({ 
+            status : errorMiddleware.NOT_FOUND_STATUS, 
+            message : errorMiddleware.DATA_NOT_FOUND 
+        });
 
         res.status(200).json({
-            type : "success",
-            message : "Data berhasil dimuat",
-            data : transaction
+            type: "success", 
+            message: "Data berhasil dimuat", 
+            report: {
+                currentPage: page ? page : 1,
+                totalPage : pages,
+                total_transaction : total,
+                transaction_limit : options.limit,
+                report : transaction
+            }
         })
 
     } catch (error) {

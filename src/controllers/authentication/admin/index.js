@@ -369,3 +369,62 @@ export const deactiveCashier = async (req, res, next) => {
         next(error)
     }
 }
+
+export const editCashier = async (req, res, next) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const { username, email } = req.body
+        await validation.EditValidationSchema.validate(req.body);
+
+        const userExists = await User?.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { username },
+                    { email }
+                ],
+                [Op.not]:[
+                    {
+                        id : req.params.idCashier
+                    }
+                ]
+            } 
+        });
+
+        if (userExists) throw ({
+            type : "error",
+            status : errorMiddleware.BAD_REQUEST_STATUS, 
+            message : errorMiddleware.USER_ALREADY_EXISTS 
+        });
+
+
+        const user = await User?.update(
+            req.body,
+            { 
+                where: { 
+                    id : req.params.idCashier
+                } 
+            }
+        );
+
+
+        res.status(200).json({
+            type : "success",
+            message: "Cashier detail change success",
+            user
+        });
+
+        await transaction.commit();
+
+    } catch (error) {
+        await transaction.rollback();
+
+        if (error instanceof ValidationError) {
+            return next({
+                status : errorMiddleware.BAD_REQUEST_STATUS, 
+                message : error?.errors?.[0]
+            })
+        }
+
+        next(error)
+    }
+}

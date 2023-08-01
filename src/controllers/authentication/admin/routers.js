@@ -9,8 +9,9 @@ router.get("/keep-login", verifyUser, AdminControllers.keepLogin)
 router.put("/forgot-password", AdminControllers.forgotPassword)
 router.patch("/reset-password", verifyTokenResetPassword, verifyUser, AdminControllers.resetPassword)
 router.get("/cashier/", verifyAdmin, AdminControllers.getCashier)
-router.get("/cashier/:idCashier", verifyAdmin, AdminControllers.getCashierDetail)
 router.post("/cashier/register", verifyAdmin, AdminControllers.registerCashier)
-router.patch("/cashier/", verifyAdmin, AdminControllers.deactiveCashier)
+router.patch("/cashier", verifyAdmin, AdminControllers.deactiveCashier)
+router.get("/cashier/:idCashier", verifyAdmin, AdminControllers.getCashierDetail)
+router.patch("/cashier/:idCashier", verifyAdmin, AdminControllers.editCashier)
 
 export default router

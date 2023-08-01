@@ -53,3 +53,11 @@ export const resetPasswordValidationSchema = Yup.object().shape({
         .required("Password is required")
         .oneOf([Yup.ref('password'), null], 'Must match "password" field value'),
 });
+
+export const EditValidationSchema = Yup.object({
+    username : Yup.string()
+        .min(5,"Username must contain 6 or more characters"),
+        
+    email : Yup.string()
+        .email("Invalid email")
+})
