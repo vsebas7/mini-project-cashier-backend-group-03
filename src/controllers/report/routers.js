@@ -4,7 +4,8 @@ import * as ReportControllers from "./index.js"
 
 const router = Router()
 
-router.get("/", ReportControllers.allTransaction)
+router.get("/", verifyAdmin, ReportControllers.allTransaction)
+router.get("/all", verifyAdmin, ReportControllers.transactionReport)
 router.get("/:transaction_id", ReportControllers.detailTransaction)
 
 export default router

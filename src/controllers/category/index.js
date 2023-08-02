@@ -128,12 +128,6 @@ export const subCategory = async (req, res, next) => {
     try {
         const { categoryId } = req.query
 
-        // if(!Number(categoryId) && !categoryId ) throw ({
-        //     type : "error",
-        //     status : errorMiddleware.BAD_REQUEST_STATUS,
-        //     message : errorMiddleware.BAD_REQUEST
-        // })
-
         const listCategory =  await db.sequelize.query(
             `WITH RECURSIVE category_path (id, name, parent) AS
             (
@@ -169,12 +163,6 @@ export const deleteCategory = async (req, res, next) => {
     try {
 
         const { category_id } = req.params
-
-        // if(!Number(category_id) || !category_id ) throw ({
-        //     type : "error",
-        //     status : errorMiddleware.BAD_REQUEST_STATUS,
-        //     message : errorMiddleware.BAD_REQUEST
-        // })
 
         const categoryIsExist = await Category?.findAll({
             where : {
