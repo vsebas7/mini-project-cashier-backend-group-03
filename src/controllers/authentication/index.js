@@ -197,7 +197,8 @@ export const getCashier = async (req, res, next) =>{
         const cashier = await User?.findAll(
             {
                 where : {
-                    roleId : 2
+                    roleId : 2,
+                    status : 1
                 },
                 attributes : {
                     exclude : ["password"]

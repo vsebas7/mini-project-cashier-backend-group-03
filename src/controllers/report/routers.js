@@ -6,6 +6,6 @@ const router = Router()
 
 router.get("/", verifyAdmin, ReportControllers.allTransaction)
 router.get("/all", verifyAdmin, ReportControllers.transactionReport)
-router.get("/:transaction_id", ReportControllers.detailTransaction)
+router.get("/:transaction_id", verifyAdmin, ReportControllers.detailTransaction)
 
 export default router

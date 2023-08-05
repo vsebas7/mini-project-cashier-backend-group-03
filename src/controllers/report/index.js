@@ -79,15 +79,6 @@ export const transactionReport = async (req, res, next) => {
     try {
         const {startFrom, endFrom} = req.query
 
-        const filter = {}
-        
-        if(req.query.startFrom) {
-            filter.created_at = {
-                [Op.gte]: moment(startFrom).format("YYYY-MM-DD HH:mm:ss"),
-                [Op.lte]: moment(endFrom).add(1,"days").format("YYYY-MM-DD HH:mm:ss"),
-            }
-        }
-
         const transaction =  await db.sequelize.query(
             `SELECT 
                 SUM(total_price) as total, 
