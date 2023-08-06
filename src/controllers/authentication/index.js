@@ -274,24 +274,6 @@ export const registerCashier = async (req, res, next) => {
             status : 1
         });
 
-        const accessToken = tokenHelper.createToken({ 
-            id : user?.dataValues?.id,
-            username : user?.dataValues?.username,
-            token_created : moment().format("YYYY-MM-DD HH:mm:ss")
-        });
-
-        await User?.update(
-            { 
-                token : accessToken,
-                expired_token : moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss")
-            }, 
-            { 
-                where : { 
-                    id : user?.dataValues?.id
-                } 
-            }
-        )
-
         const template = fs.readFileSync(path.join(process.cwd(), "templates", "email.html"), "utf8");
 
         const message  = handlebars.compile(template)({ link : `http://localhost:3000/reset-password/${accessToken}` })
